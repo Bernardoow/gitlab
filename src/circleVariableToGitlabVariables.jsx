@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import js_yaml from "js-yaml";
+import copy from "copy-to-clipboard";
 import { variables as variablesExample } from "./exampleData";
 
 class ErrorApp {
@@ -16,9 +17,66 @@ class Variable {
 }
 
 const CircleVariableToGitlabVariables = () => {
-  const [variables, SetVariables] = useState(variablesExample);
-  const [fixedVariables, SetFixedVariables] = useState();
+  const [circleCiSettings, SetCircleCiSettings] = useState(variablesExample);
+  const [gitlabVariables, SetGitlabVariables] = useState([]);
+  const [circleCiYamlStatus, SetCircleCiYamlStatus] = useState({
+    hasProblem: false,
+    message: undefined,
+  });
+  function circleCiSettingsChange(event) {
+    SetCircleCiSettings(event.target.value);
+  }
+
+  function onClickCopy() {
+    const textToClipboard = gitlabVariables.reduce((acc, currentValue) => {
+      acc += `${currentValue.key}: ${currentValue.value}\n`;
+      return acc;
+    }, "");
+    copy(textToClipboard);
+  }
+
   useEffect(() => {
+    const readYaml = (text) => {
+      try {
+        const doc = js_yaml.load(text);
+        SetCircleCiYamlStatus({
+          hasProblem: false,
+          message: undefined,
+        });
+        return doc;
+      } catch (e) {
+        SetCircleCiYamlStatus({
+          hasProblem: true,
+          message: "Invalid Yaml Data",
+        });
+        return {};
+      }
+    };
+
+    const searchEnvironmentEntries = (yamlData) => {
+      try {
+        yamlData.hasOwnProperty("jobs") &&
+          yamlData.jobs.hasOwnProperty("build") &&
+          yamlData.jobs.build.hasOwnProperty("docker");
+
+        SetCircleCiYamlStatus({
+          hasProblem: false,
+          message: undefined,
+        });
+        const data = yamlData.jobs.build.docker;
+
+        return data.reduce((acc, current) => {
+          return { ...acc, ...current.environment };
+        }, {});
+      } catch {
+        SetCircleCiYamlStatus({
+          hasProblem: true,
+          message: "Yaml Data is missing path jobs.build.docker",
+        });
+        return {};
+      }
+    };
+
     const createVariables = (obj) => {
       return Object.entries(obj).map(([key, value]) => {
         return new Variable(key, value);
@@ -30,8 +88,9 @@ const CircleVariableToGitlabVariables = () => {
         if (typeof entry.value === "boolean") {
           entry.value = entry.value
             .toString()
-            .replace("false", "False")
-            .replace("true", "True");
+            .toLowerCase()
+            .replace("false", '"False"')
+            .replace("true", '"True"');
         }
         return entry;
       });
@@ -56,61 +115,82 @@ const CircleVariableToGitlabVariables = () => {
     };
 
     const functions = [
-      js_yaml.load,
+      readYaml,
+      searchEnvironmentEntries,
       createVariables,
       fixBooleanValues,
       fixDatabaseUrl,
       checkNullValue,
     ];
 
-    const variablesLoaded = functions.reduce((accumulator, func) => {
+    const result = functions.reduce((accumulator, func) => {
       return func(accumulator);
-    }, variables);
+    }, circleCiSettings);
 
-    SetFixedVariables(variablesLoaded);
-  }, [variables]);
+    SetGitlabVariables(result);
+  }, [circleCiSettings]);
 
   function createHtmlList() {
-    if (fixedVariables) {
-      console.log(fixedVariables);
-      const htmlList = fixedVariables.map((entry) => {
-        let className = "list-group-item";
-        if (entry.error) {
-          className += " list-group-item-danger";
-        }
-        return (
-          <li className={className}>
-            {entry.key}: {entry.value}{" "}
-            {entry.error ? "(" + entry.error.message + ")" : ""}
-          </li>
-        );
-      });
-      return htmlList;
-    }
+    const htmlList = gitlabVariables.map((entry) => {
+      let className = "list-group-item";
+      if (entry.error) {
+        className += " list-group-item-danger";
+      }
+      return (
+        <li className={className}>
+          {entry.key}: {entry.value}{" "}
+          {entry.error ? "(" + entry.error.message + ")" : ""}
+        </li>
+      );
+    });
+    return htmlList;
   }
 
   return (
     <div className="row">
       <div className="col">
+        {circleCiYamlStatus.hasProblem ? (
+          <p className="alert alert-danger" role="alert">
+            {circleCiYamlStatus.message}
+          </p>
+        ) : (
+          ""
+        )}
         <div class="mb-3">
           <label for="variables" class="form-label">
-            Variables CI API
+            Circle Ci Settings
           </label>
           <textarea
             className="form-control"
-            id="pyProjectToml"
-            value={variables}
-            // onChange={pyProjectFileHandleChange}
+            id="circleCiSettings"
+            value={circleCiSettings}
+            onChange={circleCiSettingsChange}
             rows="20"
           ></textarea>
         </div>
       </div>
-      <div className="col">
-        <div class="mb-3">
-          <label class="form-label">Variables Gitlab</label>
-          <ul className="list-group">{createHtmlList()}</ul>
+      {gitlabVariables.length > 0 && (
+        <div className="col">
+          <div className="mb-3">
+            <label className="form-label">Variables Gitlab</label>
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              style={{ "margin-left": "10px" }}
+              onClick={onClickCopy}
+            >
+              <i className="fa fa-copy" style={{ "padding-right": "5px" }}></i>
+              Copy
+            </button>
+            <ul
+              className="list-group"
+              style={{ "max-height": "90vh", overflow: "scroll" }}
+            >
+              {createHtmlList()}
+            </ul>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

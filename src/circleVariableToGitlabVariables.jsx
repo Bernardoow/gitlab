@@ -122,7 +122,7 @@ const CircleVariableToGitlabVariables = () => {
 
     const removeVariables = (arrayList) => {
       const variablesToRemove = ["HTTPS_REQUIRED"];
-      return arrayList.filter((currentValue)=> {!variablesToRemove.includes(currentValue.key)});
+      return arrayList.filter(currentValue => !variablesToRemove.includes(currentValue.key));
     }
 
     const functions = [

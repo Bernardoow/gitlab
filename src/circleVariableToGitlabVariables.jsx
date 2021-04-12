@@ -120,6 +120,11 @@ const CircleVariableToGitlabVariables = () => {
       return arrayList;
     };
 
+    const removeVariables = (arrayList) => {
+      variablesToRemove = ["HTTPS_REQUIRED"];
+      return arrayList.filter((currentValue)=> {!variablesToRemove.includes(currentValue.key)});
+    }
+
     const functions = [
       readYaml,
       searchEnvironmentEntries,
@@ -128,6 +133,7 @@ const CircleVariableToGitlabVariables = () => {
       fixDatabaseUrl,
       checkNullValue,
       addExtraVariables,
+      removeVariables
     ];
 
     const result = functions.reduce((accumulator, func) => {

@@ -109,7 +109,7 @@ const CircleVariableToGitlabVariables = () => {
       return arrayList.map((entry) => {
         const value = Number(entry.value)
         if (!Number.isNaN(value) && !Number.isInteger(value)){
-          entry.value = entry.value.toString()
+          entry.value = `"${entry.value.toString()}"`
         }
         return entry;
       });

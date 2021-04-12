@@ -97,9 +97,23 @@ const CircleVariableToGitlabVariables = () => {
     };
 
     const fixDatabaseUrl = (arrayList) => {
+      const dbVariables = [
+        "POSTGRES_USER", 
+        "POSTGRES_DB",
+        "POSTGRES_PASSWORD"]
+
+      const dbInfo = arrayList.reduce((acc, current) => {
+        if (dbVariables.includes(current.key)){
+          acc[current.key] = current.value;
+        }
+        return acc;
+      }, arrayList);
+
+
+
       return arrayList.map((entry) => {
         if (entry.key.toUpperCase().includes("DATABASE_URL")) {
-          entry.value = entry.value.replace("localhost", "postgres");
+          entry.value = `postgres://${dbInfo.POSTGRES_USER}:${dbInfo.POSTGRES_PASSWORD}@postgres:5432/${dbInfo.POSTGRES_DB}`;
         }
         return entry;
       });

@@ -105,6 +105,16 @@ const CircleVariableToGitlabVariables = () => {
       });
     };
 
+    const fixFloatValues = (arrayList) => {
+      return arrayList.map((entry) => {
+        const value = Number(entry.value)
+        if (!Number.isNaN(value) && !Number.isInteger(value)){
+          entry.value = entry.value.toString()
+        }
+        return entry;
+      });
+    }
+
     const checkNullValue = (arrayList) => {
       return arrayList.map((entry) => {
         if (entry.value === null) {
@@ -131,6 +141,7 @@ const CircleVariableToGitlabVariables = () => {
       createVariables,
       fixBooleanValues,
       fixDatabaseUrl,
+      fixFloatValues,
       checkNullValue,
       addExtraVariables,
       removeVariables

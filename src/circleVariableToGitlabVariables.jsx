@@ -55,15 +55,18 @@ const CircleVariableToGitlabVariables = () => {
 
     const searchEnvironmentEntries = (yamlData) => {
       try {
-        yamlData.hasOwnProperty("jobs") &&
-          yamlData.jobs.hasOwnProperty("build") &&
-          yamlData.jobs.build.hasOwnProperty("docker");
+        const job = Object.keys(yamlData.jobs).reduce((acc, current) => {
+          if(yamlData.jobs[current].hasOwnProperty("docker")){
+            return current
+          }
+          return acc
+        }, yamlData.jobs);
 
         SetCircleCiYamlStatus({
           hasProblem: false,
           message: undefined,
         });
-        const data = yamlData.jobs.build.docker;
+        const data = yamlData.jobs[job].docker;
 
         return data.reduce((acc, current) => {
           return { ...acc, ...current.environment };
@@ -71,7 +74,7 @@ const CircleVariableToGitlabVariables = () => {
       } catch {
         SetCircleCiYamlStatus({
           hasProblem: true,
-          message: "Yaml Data is missing path jobs.build.docker",
+          message: "Yaml Data is invalid",
         });
         return {};
       }
@@ -108,8 +111,6 @@ const CircleVariableToGitlabVariables = () => {
         }
         return acc;
       }, arrayList);
-
-
 
       return arrayList.map((entry) => {
         if (entry.key.toUpperCase().includes("DATABASE_URL")) {

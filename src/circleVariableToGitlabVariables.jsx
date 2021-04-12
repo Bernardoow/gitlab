@@ -115,7 +115,7 @@ const CircleVariableToGitlabVariables = () => {
     };
 
     const addExtraVariables = (arrayList) => {
-      arrayList.push(new Variable("key", "False"));
+      arrayList.push(new Variable("SECURE_SSL_REDIRECT", '"False"'));
 
       return arrayList;
     };

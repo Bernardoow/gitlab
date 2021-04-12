@@ -114,6 +114,12 @@ const CircleVariableToGitlabVariables = () => {
       });
     };
 
+    const addExtraVariables = (arrayList) => {
+      arrayList.push(new Variable("key", "False"));
+
+      return arrayList;
+    };
+
     const functions = [
       readYaml,
       searchEnvironmentEntries,
@@ -121,6 +127,7 @@ const CircleVariableToGitlabVariables = () => {
       fixBooleanValues,
       fixDatabaseUrl,
       checkNullValue,
+      addExtraVariables,
     ];
 
     const result = functions.reduce((accumulator, func) => {
